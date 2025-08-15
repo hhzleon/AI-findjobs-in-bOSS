@@ -1,0 +1,696 @@
+{
+  "_comment": "使用前请替换以下占位符：\n1. YOUR_NOTION_DATABASE_ID - 替换为您的Notion数据库ID\n2. YOUR_NOTION_API_CREDENTIAL_ID - 替换为您的Notion API凭证ID\n3. YOUR_DEEPSEEK_API_CREDENTIAL_ID - 替换为您的DeepSeek API凭证ID\n4. YOUR_OPENAI_API_CREDENTIAL_ID - 替换为您的OpenAI API凭证ID\n5. 在Edit Fields节点中填入您的简历内容",
+  "name": "AI找工作工作流",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2560,
+        272
+      ],
+      "id": "0425a29d-8e37-474a-b6b4-605b0fe96ac7",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8f93aff5-f919-481a-8309-047472330f11",
+              "name": "txt",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "dcd5e5bf-e8b5-4777-8145-fc1fbe953d88",
+              "name": "简历",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2144,
+        272
+      ],
+      "id": "fe2fa41b-5f1c-4524-8f1f-2281d8e9e1a8",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import json\nfor i in _input.all():\n  ss = json.loads(i.json.txt)\nreturn ss"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1952,
+        272
+      ],
+      "id": "072043ac-eac7-479e-a64e-5424b72334f0",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1728,
+        256
+      ],
+      "id": "2dcb23ad-959a-45bf-af25-bd5cb13d0101",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=你的输出请严格按照下面的格式\n{\n\"打分\":60\n}\n\n下面是工作的职位信息\n{{ $json['职位名称'] }}\n{{ $json['薪资'] }}\n{{ $json['工作经验'] }}{{ $json['学历要求'] }}\n{{ $json['工作文字信息'] }}",
+        "options": {
+          "systemMessage": "你是一名招聘专家，你的目标是对工作与简历的匹配度进行打分，以帮助我快速找到合适的工作。\n满分100，\n1. 可以马上上手的工作90分以上\n2. 需要经过一周以内学习的工作70分以上。\n3. 工作年限、学历要求等也计入评分影响因素。\n60以下未不适配或者短时间无法掌握上岗的工作。\n\n\n你的输出请严格按照下面的格式\n{\n\"打分\":60,\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        -1424,
+        272
+      ],
+      "id": "ed4d99d0-2a1e-4da9-9b34-8c5db82b72d3",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        -1584,
+        544
+      ],
+      "id": "bb051ea6-26a0-4445-86a6-6f46ee5e60ad",
+      "name": "DeepSeek Chat Model",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json['打分'] }}",
+                    "rightValue": 60,
+                    "operator": {
+                      "type": "number",
+                      "operation": "lte"
+                    },
+                    "id": "f0dd9e7a-052f-4bba-92ae-34ebf57326fb"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "5b41e7af-7e4f-4a9f-8c0f-445bbc91c6be",
+                    "leftValue": "={{ $json['打分'] }}",
+                    "rightValue": 70,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "6624badb-800f-47da-802d-b8eacf14568d",
+                    "leftValue": "={{ $json['打分'] }}",
+                    "rightValue": 90,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -752,
+        256
+      ],
+      "id": "334d605e-cfbc-499a-90a0-3388bb8d1ac3",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import json\nif (\"```json\" in _input.item.json.output):\n  output = _input.item.json.output.replace(\"```json\", \"\").replace(\"```\", \"\").strip()\nelse:\n  output = _input.item.json.output\n\n  \ndata = json.loads(output)\n  \nreturn data"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1056,
+        272
+      ],
+      "id": "046e550d-5a7c-41ad-8dc3-46929aa3ecf1",
+      "name": "格式化"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "YOUR_NOTION_DATABASE_ID",
+          "mode": "list",
+          "cachedResultName": "YOUR_DATABASE_NAME",
+          "cachedResultUrl": "https://www.notion.so/YOUR_DATABASE_ID"
+        },
+        "title": "={{ $json['公司名称'] }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "url|url",
+              "urlValue": "={{ $json.URL }}"
+            },
+            {
+              "key": "公司名称|rich_text",
+              "textContent": "={{ $json['公司名称'] }}"
+            },
+            {
+              "key": "学历要求|rich_text",
+              "textContent": "={{ $json['学历要求'] }}"
+            },
+            {
+              "key": "打招呼|rich_text",
+              "textContent": "={{ $json['打招呼语'] }}"
+            },
+            {
+              "key": "工作经验|rich_text",
+              "textContent": "={{ $json['工作经验'] }}"
+            },
+            {
+              "key": "薪资|select",
+              "selectValue": "={{ $json['薪资'] }}"
+            },
+            {
+              "key": "打分|number",
+              "numberValue": "={{ $json['打分'] }}"
+            },
+            {
+              "key": "职位名称|title",
+              "title": "={{ $json['职位名称'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        240
+      ],
+      "id": "d8b284ce-b182-4064-aeda-f407e6373986",
+      "name": "Create a database page",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+              "credentials": {
+          "notionApi": {
+            "id": "YOUR_NOTION_API_CREDENTIAL_ID",
+            "name": "YOUR_NOTION_CREDENTIAL_NAME"
+          }
+        }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=这是工作要求：{{ $('Loop Over Items').item.json['工作文字信息'] }}\n这是我的简历：\n{{ $('Edit Fields').item.json['简历'] }}\n\n请以第一人称的视角写出打招呼语言",
+        "options": {
+          "systemMessage": "你是一名专业写打招呼语言的机器人，你的目标是写出简短、专业50字左右让HR印象深刻的与岗位匹配的打招呼文案。"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        -256,
+        240
+      ],
+      "id": "2c60ef47-9754-4ca1-bed0-6487d84f2d76",
+      "name": "打招呼专写机器人"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        480
+      ],
+      "id": "d573e1ed-80e2-4ec1-8df8-ab3b46b2dbd3",
+      "name": "DeepSeek Chat Model1",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "YOUR_DEEPSEEK_API_CREDENTIAL_ID",
+          "name": "YOUR_DEEPSEEK_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "44de9404-1711-43d1-af03-5c5f9d6bd8e7",
+              "name": "打招呼语",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "545d6906-a7fe-46ff-9f86-7e4ba54451ea",
+              "name": "打分",
+              "value": "={{ $('格式化').item.json['打分'] }}",
+              "type": "number"
+            },
+            {
+              "id": "0424cbfd-fbd2-4888-b414-bae5e5f93a00",
+              "name": "职位名称",
+              "value": "={{ $('Code').item.json['职位名称'] }}",
+              "type": "string"
+            },
+            {
+              "id": "bd567d7f-033a-437b-85f3-a4bf172050b3",
+              "name": "公司名称",
+              "value": "={{ $('Code').item.json['公司名称'] }}",
+              "type": "string"
+            },
+            {
+              "id": "dfe35a9f-b10b-4d41-81d9-f71af1724d49",
+              "name": "薪资",
+              "value": "={{ $('Code').item.json['薪资'] }}",
+              "type": "string"
+            },
+            {
+              "id": "f82800f3-a4bc-4480-9b36-13bce8af9460",
+              "name": "工作经验",
+              "value": "={{ $('Code').item.json['工作经验'] }}",
+              "type": "string"
+            },
+            {
+              "id": "3e5f4e65-0b26-4321-8d5a-e1384f24721b",
+              "name": "学历要求",
+              "value": "={{ $('Code').item.json['学历要求'] }}",
+              "type": "string"
+            },
+            {
+              "id": "deeeb47d-b01c-44ac-9917-6d2eed38d8a6",
+              "name": "URL",
+              "value": "={{ $('Code').item.json.URL }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        432,
+        256
+      ],
+      "id": "2efac8e6-6f1e-4933-ad6a-8286bf0ce495",
+      "name": "与notion的同步"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=这是工作要求：{{ $('Loop Over Items').item.json['工作文字信息'] }}\n这是我的简历：\n{{ $('Edit Fields').item.json['简历'] }}\n\n请以第一人称的视角写出打招呼语言",
+        "options": {
+          "systemMessage": "你是一名专业写打招呼语言的机器人，你的目标是写出简短、专业50字左右让HR印象深刻的与岗位匹配的打招呼文案。"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        -192,
+        -48
+      ],
+      "id": "93ee2e21-4e8f-44ff-a597-d5640bd828d9",
+      "name": "打招呼专写机器人1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "44de9404-1711-43d1-af03-5c5f9d6bd8e7",
+              "name": "打招呼语",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "545d6906-a7fe-46ff-9f86-7e4ba54451ea",
+              "name": "打分",
+              "value": "={{ $('格式化').item.json['打分'] }}",
+              "type": "number"
+            },
+            {
+              "id": "0424cbfd-fbd2-4888-b414-bae5e5f93a00",
+              "name": "职位名称",
+              "value": "={{ $('Code').item.json['职位名称'] }}",
+              "type": "string"
+            },
+            {
+              "id": "bd567d7f-033a-437b-85f3-a4bf172050b3",
+              "name": "公司名称",
+              "value": "={{ $('Code').item.json['公司名称'] }}",
+              "type": "string"
+            },
+            {
+              "id": "dfe35a9f-b10b-4d41-81d9-f71af1724d49",
+              "name": "薪资",
+              "value": "={{ $('Code').item.json['薪资'] }}",
+              "type": "string"
+            },
+            {
+              "id": "f82800f3-a4bc-4480-9b36-13bce8af9460",
+              "name": "工作经验",
+              "value": "={{ $('Code').item.json['工作经验'] }}",
+              "type": "string"
+            },
+            {
+              "id": "3e5f4e65-0b26-4321-8d5a-e1384f24721b",
+              "name": "学历要求",
+              "value": "={{ $('Code').item.json['学历要求'] }}",
+              "type": "string"
+            },
+            {
+              "id": "deeeb47d-b01c-44ac-9917-6d2eed38d8a6",
+              "name": "URL",
+              "value": "={{ $('Code').item.json.URL }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        384,
+        48
+      ],
+      "id": "6a8f6b3d-9baf-4c12-834f-56f249879c5c",
+      "name": "与notion的同步1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        -192,
+        112
+      ],
+      "id": "295b12c4-15e7-43ec-963c-63a238828be9",
+      "name": "DeepSeek Chat Model2",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "YOUR_DEEPSEEK_API_CREDENTIAL_ID",
+          "name": "YOUR_DEEPSEEK_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "deepseek-chat",
+          "mode": "list",
+          "cachedResultName": "deepseek-chat"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1424,
+        560
+      ],
+      "id": "b7c721bf-0780-431e-9ebe-fdf994293c4e",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_API_CREDENTIAL_ID",
+          "name": "YOUR_OPENAI_CREDENTIAL_NAME"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "AI Agent": [
+      {
+        "json": {
+          "output": "{\n\"打分\":75\n}"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "格式化",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "打招呼专写机器人",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "打招呼专写机器人1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "格式化": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a database page": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "打招呼专写机器人": {
+      "main": [
+        [
+          {
+            "node": "与notion的同步",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "打招呼专写机器人",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "与notion的同步": {
+      "main": [
+        [
+          {
+            "node": "Create a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "打招呼专写机器人1": {
+      "main": [
+        [
+          {
+            "node": "与notion的同步1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "与notion的同步1": {
+      "main": [
+        [
+          {
+            "node": "Create a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "打招呼专写机器人1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "YOUR_VERSION_ID",
+  "meta": {
+    "instanceId": "YOUR_INSTANCE_ID"
+  },
+  "id": "YOUR_WORKFLOW_ID",
+  "tags": []
+}

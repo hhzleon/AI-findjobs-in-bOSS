@@ -1,4 +1,5 @@
 import DrissionPage
+import DrissionPage
 import json
 import csv
 import os
@@ -6,8 +7,8 @@ import time
 
 # 创建浏览器实例
 tab = DrissionPage.Chromium().latest_tab
-
-find_job_url = "https://www.zhipin.com/wapi/zpgeek/search/joblist.json?page=1&pageSize=1&city=101210100&query=python&expectInfo=&multiSubway=&multiBusinessDistrict=&position=&jobType=&salary=&experience=&degree=&industry=&scale=&stage=&scene=1&_=1754484555555"
+# 请求 URL
+find_job_url = "https://www.zhipin.com/wapi/zpgeek/pc/recommend/job/list.json?page=1&pageSize=15&city=101210100&experience=101,103,102,108,104&degree=202,203&scale=302,301&encryptExpectId=&mixExpectType=&expectInfo=&jobType=&salary=&industry=&_=1755215886995"
 
 # 异常处理页面URL
 exception_handle_url = "https://www.zhipin.com/web/geek/jobs?city=101210100&query=%E5%85%A8%E6%A0%88%E5%B7%A5%E7%A8%8B%E5%B8%88"
@@ -20,7 +21,7 @@ def get_job_list(find_job_url=find_job_url):
     return response_data
 
 def build_job_list_url(page=1, pageSize=30):
-    job_list_url = f"https://www.zhipin.com/wapi/zpgeek/search/joblist.json?page={page}&pageSize={pageSize}&city=101210100&query=python&expectInfo=&multiSubway=&multiBusinessDistrict=&position=&jobType=&salary=&experience=&degree=&industry=&scale=&stage=&scene=1&_=1754484555555"
+    job_list_url = f"https://www.zhipin.com/wapi/zpgeek/pc/recommend/job/list.json?page={page}&pageSize={pageSize}&city=101210100&experience=101,103,102,108,104&degree=202,203&scale=302,301&encryptExpectId=&mixExpectType=&expectInfo=&jobType=&salary=&industry=&_=1755215886995"
     return job_list_url
 
 def handle_access_anomaly():
@@ -53,34 +54,6 @@ def handle_access_anomaly():
         print(f"处理访问异常时出错: {e}")
         return False
 
-def get_joblist_resnum(json_data):
-    """
-    从JSON数据中提取resCount字段
-    
-    Args:
-        json_data (dict): 包含zpData的JSON对象
-        
-    Returns:
-        int: resCount的值
-    """
-    try:
-        # 检查JSON结构
-        if isinstance(json_data, str):
-            json_data = json.loads(json_data)
-        
-        # 获取zpData中的resCount
-        res_count = json_data.get('zpData', {}).get('resCount')
-        
-        if res_count is not None:
-            return res_count
-        else:
-            print("未找到resCount字段")
-            return None
-            
-    except Exception as e:
-        print(f"解析JSON时出错: {e}")
-        return None
-
 def get_pagination_info(json_data):
     """
     获取分页相关信息
@@ -98,8 +71,6 @@ def get_pagination_info(json_data):
         zp_data = json_data.get('zpData', {})
         
         pagination_info = {
-            "resCount": zp_data.get('resCount', 0),  # 真实总职位数
-            "totalCount": zp_data.get('totalCount', 0),  # 当前接口返回的职位数
             "hasMore": zp_data.get('hasMore', False),  # 是否还有更多页面
             "jobListCount": len(zp_data.get('jobList', [])),  # 当前页职位数量
         }
@@ -317,9 +288,7 @@ def crawl_all_pages_with_hasmore(page_size=30, csv_filename="boss_jobs.csv"):
         # 获取分页信息
         pagination_info = get_pagination_info(job_data)
         if pagination_info:
-            print(f"页面信息: resCount={pagination_info['resCount']}, "
-                  f"totalCount={pagination_info['totalCount']}, "
-                  f"hasMore={pagination_info['hasMore']}, "
+            print(f"页面信息: hasMore={pagination_info['hasMore']}, "
                   f"当前页职位数={pagination_info['jobListCount']}")
         
         # 提取工作数据
@@ -348,105 +317,13 @@ def crawl_all_pages_with_hasmore(page_size=30, csv_filename="boss_jobs.csv"):
     print(f"\n爬取完成！成功爬取 {successful_pages} 页，总计 {total_jobs} 条工作信息")
     return successful_pages
 
-def crawl_all_pages(total_count, page_size=30, csv_filename="boss_jobs.csv"):
-    """
-    爬取所有页面的工作信息（基于resCount计算，带自动异常处理）
-    
-    Args:
-        total_count (int): 总职位数量
-        page_size (int): 每页数量
-        csv_filename (str): CSV文件名
-        
-    Returns:
-        int: 成功爬取的页面数量
-    """
-    # 计算总页数
-    total_pages = (total_count + page_size - 1) // page_size
-    print(f"总职位数: {total_count}, 每页: {page_size}, 总页数: {total_pages}")
-    
-    successful_pages = 0
-    
-    for page in range(1, total_pages + 1):
-        print(f"\n正在爬取第 {page}/{total_pages} 页...")
-        
-        # 构建当前页面的URL
-        current_url = build_job_list_url(page=page, pageSize=page_size)
-        
-        # 获取页面数据
-        job_data = get_job_list(current_url)
-        
-        # 检查是否出现访问异常
-        if check_access_anomaly(job_data):
-            print("检测到访问行为异常，开始自动处理...")
-            
-            # 自动处理异常
-            if handle_access_anomaly():
-                print("异常处理完成，重新尝试当前页面...")
-                # 重新获取当前页面数据
-                job_data = get_job_list(current_url)
-                
-                # 再次检查异常
-                if check_access_anomaly(job_data):
-                    print("重试后仍然出现异常，跳过当前页面")
-                    continue
-            else:
-                print("异常处理失败，跳过当前页面")
-                continue
-        
-        # 提取工作数据
-        organized_jobs = extract_job_data(job_data)
-        
-        if organized_jobs:
-            # 写入CSV文件（追加模式）
-            if write_jobs_to_csv(organized_jobs, csv_filename, mode="a"):
-                successful_pages += 1
-                print(f"第 {page} 页爬取成功，获取 {len(organized_jobs)} 条工作信息")
-            else:
-                print(f"第 {page} 页写入CSV失败")
-        else:
-            print(f"第 {page} 页没有获取到工作信息")
-        
-        # 添加延迟，避免请求过于频繁
-        time.sleep(2)
-    
-    print(f"\n爬取完成！成功爬取 {successful_pages}/{total_pages} 页")
-    return successful_pages
-
 # 打开BOSS直聘
 tab.get("https://www.zhipin.com/")
 
 islogin = input("请输入是否登录(y/n):")
 if islogin == "y":
-    job_data = get_job_list()
-    res_count = get_joblist_resnum(job_data)
-    if res_count is not None:
-        print(f"职位数量: {res_count}")
-        
-        # 显示分页信息
-        pagination_info = get_pagination_info(job_data)
-        if pagination_info:
-            print(f"分页详情: resCount={pagination_info['resCount']}, "
-                  f"totalCount={pagination_info['totalCount']}, "
-                  f"hasMore={pagination_info['hasMore']}")
-        
-        # 选择爬取方式
-        print("\n请选择爬取方式:")
-        print("1. 基于resCount计算页数爬取")
-        print("2. 基于hasMore智能翻页爬取")
-        
-        choice = input("请输入选择 (1 或 2): ")
-        
-        if choice == "1":
-            # 基于resCount的爬取
-            crawl_all_pages(res_count)
-        elif choice == "2":
-            # 基于hasMore的智能爬取
-            crawl_all_pages_with_hasmore()
-        else:
-            print("无效选择，使用默认方式（基于resCount）")
-            crawl_all_pages(res_count)
-    
-    
+    print("开始基于hasMore字段的智能翻页爬取...")
+    crawl_all_pages_with_hasmore()
 else:
     print("请先登录")
 
