@@ -1,0 +1,50 @@
+{
+  "search_keywords": [
+    "Python",
+    "全栈工程师",
+    "PHP",
+    "后端"
+  ],
+  "pages_per_keyword": 3,
+  "city_code": "101280600",
+  "daily_limit": 50,
+  "score_threshold": 60,
+  "min_interval_sec": 60,
+  "max_interval_sec": 120,
+  "weight_match": 0.7,
+  "weight_active": 0.3,
+  "hard_exclude": true,
+  "pause_on_captcha": true,
+  "detail_fetch_interval_sec": 3,
+  "greeting_message": "您好，我是有三年经验的 FDE 全栈工程师，请问可以发您一份我的简历吗？",
+  "db_path": "data/apply.db",
+  "llm": {
+    "enabled": true,
+    "api_key": "填入你的 DeepSeek API key",
+    "base_url": "https://api.deepseek.com/v1",
+    "model": "deepseek-chat"
+  },
+  "agent": {
+    "enabled": false,
+    "interval_sec": 90,
+    "min_action_delay_sec": 8,
+    "max_action_delay_sec": 25,
+    "quiet_hours": [
+      0,
+      8
+    ],
+    "persona": "你是侯皓展(三年经验 FDE 全栈工程师,前后端+Python+PHP,大专学历)的求职助手,代替 TA 与招聘方在 BOSS 直聘上对话。"
+  },
+  "scheduler": {
+    "enabled": true,
+    "collect_interval_min": 60
+  },
+  "auto_apply": {
+    "enabled": false,
+    "min_score": 70
+  },
+  "score_blend": {
+    "similarity": 0.4,
+    "llm": 0.6
+  }
+}

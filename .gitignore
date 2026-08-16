@@ -1,0 +1,25 @@
+# 依赖
+node_modules/
+
+# 运行时数据与日志(含岗位/投递/会话数据,频繁变动不入库)
+data/
+*.log
+
+# 浏览器登录态(含 BOSS 直聘会话 Cookie,切勿提交)
+.edge-profile/
+
+# 生成物
+screenshots/
+artifacts/
+
+# 敏感配置与个人数据(API key / 简历全文)
+config.json
+resume_profile.json
+
+# 工具本地文件(Claude Code 配置 / Reasonix 元数据,非项目代码)
+.claude/
+.reasonix/
+
+# 系统文件
+.DS_Store
+Thumbs.db
